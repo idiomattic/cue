@@ -7,6 +7,7 @@ import (
 		"strings"
     "os"
     "path/filepath"
+		"html"
 )
 
 // xmlPrompt is used for XML marshaling/unmarshaling
@@ -29,13 +30,13 @@ func (p *Prompt) Save() error {
 
     // Convert to XML format
     xp := xmlPrompt{
-        Title:        p.Title,
-        Content:      p.Content,
-        Category:     p.Category,
-        Tags:         p.Tags,
-        CreatedDate:  p.CreatedDate.Format("2006-01-02"),
-        LastModified: p.LastModified.Format("2006-01-02"),
-    }
+			Title:        p.Title,
+			Content:      p.Content,  // The content will be automatically escaped by xml.MarshalIndent
+			Category:     p.Category,
+			Tags:         p.Tags,
+			CreatedDate:  p.CreatedDate.Format("2006-01-02"),
+			LastModified: p.LastModified.Format("2006-01-02"),
+	}
 
     // Marshal to XML
     data, err := xml.MarshalIndent(xp, "", "    ")
@@ -66,6 +67,9 @@ func LoadPrompt(filename string) (*Prompt, error) {
 	if err := xml.Unmarshal(data, &xp); err != nil {
 			return nil, fmt.Errorf("failed to parse prompt XML: %w", err)
 	}
+
+	// Unescape the content
+	xp.Content = html.UnescapeString(xp.Content)
 
 	createdDate, err := time.Parse("2006-01-02", xp.CreatedDate)
 	if err != nil {
@@ -105,5 +109,5 @@ func StripXMLTags(content string) string {
 			}
 	}
 
-	return result.String()
+	return strings.TrimSpace(result.String())
 }
